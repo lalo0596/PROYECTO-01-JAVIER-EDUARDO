@@ -1,0 +1,171 @@
+#%%
+""" Bibliotecas que se van a ocupar  """
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+print('hola', pd.__version__)
+
+#%%
+""" lectura de nuestra base de datos de CSV """
+sldb = pd.read_csv('synergy_logistics_database.csv')
+
+
+# %%
+""" se crea DataFrame de exportaciones e importaciones  """
+
+exportaciones = sldb[ sldb ['direction'] == 'Exports']
+importaciones = sldb[sldb ['direction'] == 'Imports']
+
+
+## 1 rutas de importacion y exportacion 
+##se define como ruta de combinacion de : origen, destino y medio de transporte 
+
+#%%
+rutas_expor = exportaciones.groupby(['origin', 'destination', 'transport_mode']).count()['total_value']
+rutas_impor = importaciones.groupby(['origin', 'destination', 'transport_mode']).count()['total_value']
+# %%
+"""  se ordenan y  se escojen solo las 10 mejores de exportacion y importacion """
+top_expor = rutas_expor.sort_values(ascending=False).head(10)
+top_impor = rutas_impor.sort_values(ascending=False).head(10)
+
+# %%
+"""2°- Medio de transporte utilizado  """
+#exportacion
+trans_exp = exportaciones.groupby(['transport_mode'])
+top_transexp = trans_exp.count()['total_value']
+top_transexp=top_transexp.reset_index()
+
+#Usamos una variable que tenga el acumulado de ventas por cada transporte
+ganancias=trans_exp['total_value'].sum()
+ganancias=ganancias.reset_index()
+
+#Agregamos al DataFrame de transporte las ganancias generadas
+top_transexp['ganancias']=ganancias['total_value']
+#Agregamos otra columna con una cantidad de números menor por practicidad en los gráficos
+top_transexp['ganancias*10e-9']=round((top_transexp['ganancias']*0.000000001),2)
+top_transexp = top_transexp.sort_values('total_value',ascending=False).head()
+
+#verificamos que porcentaje de ganancias representa cada transporte
+T_gan=top_transexp['ganancias'].sum()
+top_transexp['porcentaje_gan']=round((top_transexp['ganancias']/T_gan)*100,2)
+top_transexp=top_transexp.sort_values('porcentaje_gan',ascending=False).head()
+top_transexp['%acumulado_gan']=top_transexp.cumsum()['porcentaje_gan']
+
+top_transexp=top_transexp.sort_values('total_value',ascending=False).head()
+top_transexp
+
+
+# %%
+""" gráfico para la cantidad de veces que se usó un transporte """
+x_values = top_transexp['transport_mode']
+y_values = top_transexp['total_value']
+plt.bar(x_values, y_values)
+plt.title('Uso de transporte, exportaciones')
+ax = plt.subplot()                   
+ax.set_xticks(x_values)             
+ax.set_xticklabels(x_values)       
+ax.set_xlabel('Medio de transporte')  
+ax.set_ylabel('Cantidad de veces usado')
+plt.show()
+plt.close('all')
+
+# %%
+""" gráfico para la cantidad de veces que se usó un transporte  en ganancas"""
+x_values = top_transexp['transport_mode']
+y_values = top_transexp['ganancias*10e-9']
+plt.bar(x_values, y_values)
+plt.title('Ganancias por transporte, exportaciones')
+ax = plt.subplot()                   
+ax.set_xticks(x_values)             
+ax.set_xticklabels(x_values)       
+ax.set_xlabel('Medio de transporte')  
+ax.set_ylabel('Ganancias (miles de millones)')
+plt.show()
+plt.close('all')
+# %%
+#importacion 
+trans_imp = importaciones.groupby(['transport_mode'])
+top_transimp = trans_imp.count()['total_value']
+top_transimp = top_transimp.reset_index()
+
+#Usamos una variable que tenga el acumulado de ventas por cada transporte
+ganancias_imp=trans_imp['total_value'].sum()
+ganancias_imp=ganancias_imp.reset_index()
+
+#Agregamos al DataFrame de transporte las ganancias generadas
+top_transimp['ganancias']=ganancias_imp['total_value']
+#Agregamos otra columna con una cantidad de números menor por practicidad en los gráficos
+top_transimp['ganancias*10e-9']=round((top_transimp['ganancias']*0.000000001),2)
+top_transimp = top_transimp.sort_values('total_value',ascending=False).head()
+
+#verificamos que porcentaje de ganancias representa cada transporte
+T_gan_imp=top_transimp['ganancias'].sum()
+top_transimp['porcentaje_gan']=round((top_transimp['ganancias']/T_gan_imp)*100,2)
+top_transimp=top_transimp.sort_values('porcentaje_gan',ascending=False).head()
+top_transimp['%acumulado_gan']=top_transimp.cumsum()['porcentaje_gan']
+
+top_transimp=top_transimp.sort_values('total_value',ascending=False).head()
+top_transimp
+# %%
+""" gráfico para la cantidad de veces que se usó un transporte """
+
+x_values = top_transimp['transport_mode']
+y_values = top_transimp['total_value']
+plt.bar(x_values, y_values)
+plt.title('Uso de transporte, importaciones')
+ax = plt.subplot()                   
+ax.set_xticks(x_values)             
+ax.set_xticklabels(x_values)       
+ax.set_xlabel('Medio de transporte')  
+ax.set_ylabel('Cantidad de veces usado')
+plt.show()
+plt.close('all')
+# %%
+""" gráfico para la cantidad de veces que se usó un transporte en ganancias  """
+x_values = top_transimp['transport_mode']
+y_values = top_transimp['ganancias*10e-9']
+plt.bar(x_values, y_values)
+plt.title('Ganancias por transporte, importaciones')
+ax = plt.subplot()                   
+ax.set_xticks(x_values)             
+ax.set_xticklabels(x_values)       
+ax.set_xlabel('Medio de transporte')  
+ax.set_ylabel('Ganancias (miles de millones)')
+plt.show()
+plt.close('all')
+# %%
+""" Medio de transporte utilizado """
+#EXPORTACIONES
+#suma total de ganancias para exportaciones
+total_exp=exportaciones['total_value'].sum()
+#Asignamos un porcentaje de aportación a cada exportación a la ganancia total
+expor_gan = exportaciones.groupby(['origin'])
+ganan_expor= expor_gan.sum()['total_value']
+ganan_expor=ganan_expor.reset_index()
+#Esta variable cuenta las veces que cada transporte fue utilizado 
+ganan_expor['porcentaje']=round((ganan_expor['total_value']/total_exp)*100,2)
+ganan_expor=ganan_expor.sort_values('porcentaje',ascending=False).head(20)
+ganan_expor['% acumulado']=ganan_expor.cumsum()['porcentaje']
+#Genero un archivo excel para darle formato a la tabla del reporte
+ganan_expor.to_excel('VTotal_exportaciones.xlsx')
+ganan_expor
+
+
+# %%
+#IMPORTACIONES
+#suma total de ganancias para exportaciones
+total_imp=importaciones['total_value'].sum()
+#Asignamos un porcentaje de aportación a cada exportación a la ganancia total
+impor_gan = importaciones.groupby(['origin'])
+ganan_impor= impor_gan.sum()['total_value']
+ganan_impor=ganan_impor.reset_index()
+#Esta variable cuenta las veces que cada transporte fue utilizado 
+ganan_impor['porcentaje']=round((ganan_impor['total_value']/total_imp)*100,2)
+ganan_impor=ganan_impor.sort_values('porcentaje',ascending=False).head(20)
+ganan_impor['% acumulado']=ganan_impor.cumsum()['porcentaje']
+ganan_impor.to_excel('VTotal_importaciones.xlsx')
+ganan_impor
+
+
+# %%
